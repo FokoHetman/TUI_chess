@@ -3,28 +3,28 @@ pub enum Colors {
   White,
   Black,
 }
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct Empty {icon:String}
 
-#[derive(Clone,Debug)]
-pub struct Pawn{value: i32, color: Colors, icon:String}
+#[derive(Clone,Debug,PartialEq)]
+pub struct Pawn{value: i32, pub color: Colors, icon:String}
 
-#[derive(Clone,Debug)]
-pub struct Rook{value: i32, color: Colors, icon:String}
+#[derive(Clone,Debug,PartialEq)]
+pub struct Rook{value: i32, pub color: Colors, icon:String}
 
-#[derive(Clone, Debug)]
-pub struct Knight{value: i32, color: Colors, icon:String}
+#[derive(Clone, Debug,PartialEq)]
+pub struct Knight{value: i32, pub color: Colors, icon:String}
 
-#[derive(Clone, Debug)]
-pub struct Bishop{value: i32, color: Colors, icon:String}
+#[derive(Clone, Debug,PartialEq)]
+pub struct Bishop{value: i32, pub color: Colors, icon:String}
 
-#[derive(Clone, Debug)]
-pub struct Queen{value: i32, color: Colors, icon:String}
+#[derive(Clone, Debug,PartialEq)]
+pub struct Queen{value: i32, pub color: Colors, icon:String}
 
-#[derive(Clone, Debug)]
-pub struct King{value: i32, color: Colors, icon:String}
+#[derive(Clone, Debug,PartialEq)]
+pub struct King{value: i32, pub color: Colors, icon:String}
 
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,PartialEq)]
 pub enum Pieces {
   Empty(Empty),
   Pawn(Pawn),
@@ -135,6 +135,26 @@ impl Rook {
     return Pieces::Rook(Rook {value: 5,color,icon:String::from("R")});
   }
   pub fn check_move(&mut self, code: Vec<&str>, entity: Pieces) -> movestate {
+    match entity.clone() {
+      Pieces::Pawn(e) => {if e.color==self.color {return movestate::Illegal}},
+      Pieces::Knight(e) => {if e.color==self.color {return movestate::Illegal}},
+      Pieces::Bishop(e) => {if e.color==self.color {return movestate::Illegal}},
+      Pieces::Queen(e) => {if e.color==self.color {return movestate::Illegal}},
+      Pieces::King(e) => {if e.color==self.color {return movestate::Illegal}},
+      Pieces::Rook(e) => {if e.color==self.color {return movestate::Illegal}},
+      _ => {}
+    }
+    let o_pos = code[0].to_string().chars().collect::<Vec<char>>();
+    let n_pos = code[1].to_string().chars().collect::<Vec<char>>();
+
+    let opos = o_pos[1].to_string().parse::<i32>().unwrap();
+    let npos = n_pos[1].to_string().parse::<i32>().unwrap();
+    let oindex = Into::<u32>::into(o_pos[0].to_string().to_lowercase().chars().next().unwrap()) -96;
+    let nindex = Into::<u32>::into(n_pos[0].to_string().to_lowercase().chars().next().unwrap()) -96;
+
+    if opos!=npos && nindex!=oindex {
+      return movestate::Illegal
+    }
     return movestate::Legal
   }
 }

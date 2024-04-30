@@ -1,7 +1,7 @@
 pub mod common;
 use self::common::{Pieces, Colors};
 use self::common::{Empty, Pawn, Rook, Knight, Bishop, Queen, King};
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct Cell {
   pub locator: Pieces,
 }
@@ -72,6 +72,15 @@ impl Board {
     
     for mut row in self.as_array() {
       for mut cell in row.as_array() {
+        /*res += &match cell.locator.clone() {
+          Pieces::Pawn(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
+          Pieces::Rook(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
+          Pieces::Knight(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
+          Pieces::Bishop(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
+          Pieces::King(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
+          Pieces::Queen(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
+          _ => "".to_string()
+        };*/
         res += &cell.locator.getIcon()
       }
       res += "\n";
