@@ -24,7 +24,7 @@ impl Controller {
     let mut n_row: Board::Row = self.board.as_array()[n_pos[1].to_string().parse::<i32>().unwrap() as usize-1].clone();
     let mut n_cell = n_row.as_array()[nindex as usize].clone();
 
-    if o_cell.locator.check_move(moves, n_cell.locator, self.lmove.clone()) == Board::common::movestate::Illegal {
+    if o_cell.locator.check_move(moves.clone(), n_cell.clone().locator, self.lmove.clone()) == Board::common::movestate::Illegal {
       return Board::common::movestate::Illegal;
     }
     if match o_cell.locator {
@@ -53,7 +53,7 @@ impl Controller {
     
 
 //    println!("{:#?} => {:#?}", o_cell, n_cell);
-    return Board::common::movestate::Legal;
+    return o_cell.locator.check_move(moves, n_cell.locator, self.lmove.clone())
   }
   pub fn mk_move(&mut self, code: String) -> bool {
     match self.chk_move(code.clone()) {
