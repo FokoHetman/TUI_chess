@@ -10,12 +10,16 @@ fn main() {
   println!("{}", board.show());
 
   let mut input = String::new();
+  let mut current_move = Handlers::Control::Board::common::Colors::White;
   loop {
+    print!("$ ");
     input = String::new();
     let _ = io::stdin().read_line(&mut input).unwrap();
-    let _ = control.mk_move(input);
-    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-    println!("{}", control.board.show());
+    if control.chk_move(input.clone()) == Handlers::Control::Board::common::movestate::Illegal {
+      let _ = control.mk_move(input);
+      print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+      println!("{}", control.board.show());
+    }
   }
 
   /*  let mut input: String = String::new();

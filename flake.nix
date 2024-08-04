@@ -20,7 +20,7 @@
       formatter = pkgs.alejandra;
       packages.default =
         pkgs.runCommand "chess" {
-          buildInputs = [pkgs.rustc pkgs.gcc];
+          buildInputs = [pkgs.cargo];
           src = ./src;
           /*quotes =
             ["["]
@@ -34,7 +34,8 @@
         } ''
           #export "CONFIG={quotes=$quotes; plush=$plush}" #;$plush"
           mkdir -p "$out/bin"
-          rustc "$src/chess.rs" -o "$out/bin/chess";
+          export CARGO_TARGET_DIR=$out/bin
+          cargo build --manifest-path $src/Cargo.toml
 
         '';
     });
