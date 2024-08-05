@@ -8,8 +8,13 @@ impl Controller {
     return Controller {board, lmove: [String::from("e"), String::from("a4"), String::from("c4")].to_vec()};
   }
   pub fn chk_move(&mut self, code: String) -> Board::common::movestate { // lmove 0->figure 1->opos 2->npos
+    if !code.contains(" ") {
+      return Board::common::movestate::Illegal;
+    }
     let moves = code.split(" ").collect::<Vec<&str>>();
-
+    if moves.len()<2 {
+      return Board::common::movestate::Illegal;
+    }
     let mv0 = moves[0].to_string();
     let o_pos = mv0.chars().collect::<Vec<char>>();
 
