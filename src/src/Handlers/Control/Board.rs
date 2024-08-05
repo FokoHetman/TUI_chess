@@ -28,7 +28,10 @@ pub struct Board {
   g: Row,
   h: Row,
 }
-
+pub enum ShowMode {
+  default,
+  borders,
+}
 impl Cell {
   fn empty() -> Self {
     return Cell {locator: Empty::new()};
@@ -67,11 +70,15 @@ impl Board {
 
     return Board {a:white_row, b: white_pawns, c: erow.clone(), d: erow.clone(), e:erow.clone(), f:erow.clone(), g: black_pawns, h: black_row};
   }
-  pub fn show(&mut self) -> String {
+  pub fn show(&mut self, mode: Option<ShowMode>) -> String {
+    let mode = mode.unwrap_or_else(|| ShowMode::default);
+    
     let mut res:String = String::new();
     let mut r_index = 1;
+    res += &(['-'; 32].into_iter().collect::<String>()+"|");
     for mut row in self.as_array() {
       
+      res += "\n| ";
       for mut cell in row.as_array() {
         /*res += &match cell.locator.clone() {
           Pieces::Pawn(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
@@ -82,14 +89,38 @@ impl Board {
           Pieces::Queen(e) => { match e.color {Colors::White =>   cell.locator.clone().getIcon(),  Colors::Black =>  cell.locator.clone().getIcon().to_lowercase()  }},
           _ => "".to_string()
         };*/
-        res += &cell.locator.getIcon()
+        match mode {
+          ShowMode::default => {
+            res += &cell.locator.getIcon()
+          },
+          ShowMode::borders => {
+            res += &(cell.locator.getIcon() + " | ")
+          }
+        }
       }
-      res += "  ";      // DEBATABLE
-      res += &r_index.to_string();   // DEBATABLE
-      res += "\n";
+      match mode {
+        ShowMode::default => {
+          res += "|";      // DEBATABLE
+          res += &r_index.to_string();   // DEBATABLE
+          res += "\n";
+        },
+        ShowMode::borders => {
+          //res += "|";
+          res += &r_index.to_string();
+          res += "\n";
+          res += &(['-'; 32].into_iter().collect::<String>() + "|");
+        }
+      }
       r_index += 1;
     }
-    res += "\nabcdefgh"; // DEBATABLE
+    match mode {
+      ShowMode::default => {
+        res += &format!("{}|\nabcdefgh", ['-'; 8].into_iter().collect::<String>());
+      },
+      ShowMode::borders => {
+        res += &format!("\n  a   b   c   d   e   f   g   h  ");
+      },
+    }
     return res
   }
   pub fn as_array(&mut self) -> [Row; 8] {
