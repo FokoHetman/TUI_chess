@@ -10,8 +10,14 @@
 
   outputs = { self, fenix, flake-utils, nixpkgs }:
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system}; in
+      let 
+        pkgs = nixpkgs.legacyPackages.${system};
+        config = import ./configuration.nix;
+      in
       {
+        environment.sessionVariables = {
+          HELP_ME = "PLEASE";
+        };
         defaultPackage = (pkgs.makeRustPlatform {
           inherit (fenix.packages.${system}.minimal) cargo rustc;
         }).buildRustPackage {
