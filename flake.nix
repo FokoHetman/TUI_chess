@@ -9,13 +9,13 @@
   };
 
   outputs = { self, fenix, flake-utils, nixpkgs }:
-    flake-utils.lib.eachDefaultSystem (system:
+  flake-utils.lib.eachDefaultSystem (system:
       let 
         pkgs = nixpkgs.legacyPackages.${system};
         config = import ./configuration.nix;
       in
       {
-        defaultPackage = let 
+        packages.default = let 
           mf = (pkgs.lib.importTOML ./Cargo.toml).package;
         in
           pkgs.rustPlatform.buildRustPackage rec {
