@@ -257,7 +257,7 @@ fn main_loop() {
       code: match c { escape_char => KeyCode::Escape, backspace_char => KeyCode::Backspace,':' => KeyCode::Colon, '\n' => KeyCode::Enter, _ => KeyCode::Char(c)},
       modifiers,
     };
-    println!("{:#?}", event);
+    //println!("{:#?}", event);
 
     parse_event(event, &mut program);
     if program.exit {
