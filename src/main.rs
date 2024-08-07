@@ -239,7 +239,7 @@ fn main_loop() {
 
   //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
   //println!("{}", board.show());
-  //clear();
+  clear();
   redraw(&mut program);
 
 
@@ -274,7 +274,7 @@ fn main_loop() {
 
 
 fn main() {
-  println!("{}", env!("HELP_ME").to_string());
+  //println!("{}", env!("HELP_ME").to_string());
   setup_termios();
 
   
