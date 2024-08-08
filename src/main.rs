@@ -77,6 +77,13 @@ pub enum Modifier {
   Control,
   //why even do it at this point
 }
+#[derive(Debug,PartialEq)]
+pub enum Direction {
+  Up,
+  Down,
+  Right,
+  Left
+}
 
 #[derive(Debug,PartialEq)]
 pub enum KeyCode {
@@ -84,6 +91,7 @@ pub enum KeyCode {
   Colon,
   Enter,
   Backspace,
+  Arrow(Direction),
   Char(char),
 }
 
@@ -183,7 +191,15 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
         },
         KeyCode::Escape => {
           program.state = States::Control;
-        }
+        },
+        KeyCode::Arrow(d) => {
+          /*match d {
+            Direction::Left => {
+              
+            }
+          }*/
+        },
+        _ => {}
       }
     },
     States::Command => {
@@ -218,10 +234,18 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
           //sometime in the futrureererree!
           //program.io = String::new();
           program.state = States::Control;
-        }
+        },
+        KeyCode::Arrow(d) => {
+
+        },
+        _ => {}
       }
     }
   }
+}
+
+fn getch() -> char {
+  io::stdin().bytes().next().unwrap().unwrap() as char
 }
 
 
@@ -254,7 +278,9 @@ fn main_loop() {
       modifiers.push(Modifier::Control);
     }
     let event = KeyEvent{
-      code: match c { escape_char => KeyCode::Escape, backspace_char => KeyCode::Backspace,':' => KeyCode::Colon, '\n' => KeyCode::Enter, _ => KeyCode::Char(c)},
+      code: match c { escape_char => KeyCode::Escape, backspace_char => KeyCode::Backspace,':' => KeyCode::Colon, '\n' => KeyCode::Enter, 
+          '\u{1b}' => {let _ = getch(); KeyCode::Arrow(match getch() {'A' => Direction::Up, 'B' => Direction::Down, 'C' => Direction::Right, 'D' => Direction::Left, _ => panic!("literally how")})},
+          _ => KeyCode::Char(c)},
       modifiers,
     };
     //println!("{:#?}", event);
