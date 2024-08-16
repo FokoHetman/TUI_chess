@@ -2,7 +2,8 @@ mod Handlers;
 use libc;
 use std::{
   io::{self, Read, Write, IsTerminal},
-  sync::Mutex,
+  sync::{Arc,Mutex},
+  thread,
 };
 
 
@@ -113,6 +114,9 @@ struct Program {
   control: Handlers::Control::Controller,
   input: String,
   exit: bool,
+  multiplayer: bool,
+  current_player: Handlers::Control::Board::common::Colors,
+  player: Handlers::Control::Board::common::Colors,
 }
 
 
@@ -121,10 +125,16 @@ fn clear() {
 }
 fn redraw(program: &mut Program) {
   //println!("{}", get_terminal_size().unwrap().cols);
-  let mut showed = format!("{}\n{}\n{}", program.control.board.show(Some(Handlers::Control::Board::ShowMode::borders)), vec!['-'; get_terminal_size().unwrap().cols as usize].iter().collect::<String>(), program.input);
+  let mut showed = format!("{}\n{}\n{}", program.control.board.show(Some(Handlers::Control::Board::ShowMode::borders)), 
+      vec!['-'; get_terminal_size().unwrap().cols as usize].iter().collect::<String>(), program.input);
 
   let input_line = showed.split("\n").collect::<Vec<&str>>().len() as i32;
-  let to_last_line = get_terminal_size().unwrap().rows as i32 - input_line;
+  showed += &format!("\n{}", vec!['-'; get_terminal_size().unwrap().cols as usize].iter().collect::<String>());
+
+  showed += &format!("\nYour Pieces: {}\nCurrent Move: {}", 
+      match program.player {Handlers::Control::Board::common::Colors::White => "White", _ => "Black"}, match program.current_player {Handlers::Control::Board::common::Colors::White => "White", _ => "Black"});
+
+  let to_last_line = get_terminal_size().unwrap().rows as i32 - showed.split("\n").collect::<Vec<&str>>().len() as i32;
   for i in 0..to_last_line {
     showed += "\n"
   }
@@ -168,15 +178,24 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
     States::Input => {
       match event.code {
         KeyCode::Enter => {
-          println!("{:#?} a {}", program.control.chk_move(program.input.clone()), program.input.clone());
+          if program.current_player == program.player {
+            println!("{:#?} a {}", program.control.chk_move(program.input.clone()), program.input.clone());
 
-          if program.control.chk_move(program.input.clone()) != Handlers::Control::Board::common::movestate::Illegal {
-            let _ = program.control.mk_move(program.input.clone());
-            println!("move made!");
+            if program.control.chk_move(program.input.clone()) != Handlers::Control::Board::common::movestate::Illegal {
+              let _ = program.control.mk_move(program.input.clone());
+              println!("move made!");
+            } else {
+              program.io = String::from("Invalid Move!");
+            }
+            program.input = String::new();
+            program.current_player = match program.current_player {
+              Handlers::Control::Board::common::Colors::White => Handlers::Control::Board::common::Colors::Black,
+              _ => Handlers::Control::Board::common::Colors::White,
+            };
           } else {
-            program.io = String::from("Invalid Move!");
+            program.io = String::from("Not your turn!");
+            program.input = String::new();
           }
-          program.input = String::new();
         },
         KeyCode::Backspace => {
           let mut chars = program.input.chars();
@@ -257,9 +276,17 @@ fn main_loop() {
     input: String::new(),
     control: Handlers::Control::Controller::new(board.clone()),
     exit: false,
+    multiplayer: env!("CHESS_MULTIPLAYER")=="1",
+    current_player: Handlers::Control::Board::common::Colors::White,
+    player: Handlers::Control::Board::common::Colors::White,
   };
 
 
+  if program.multiplayer {
+    let mutex = std::sync::Mutex::new(program);
+    let arc = std::sync::Arc::new(mutex);
+    thread::spawn(|| {Handlers::server::estabilishListener(arc)});
+  }
 
   //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
   //println!("{}", board.show());
@@ -286,10 +313,10 @@ fn main_loop() {
     //println!("{:#?}", event);
 
     parse_event(event, &mut program);
+    clear();
     if program.exit {
       break
     }
-    clear();
     redraw(&mut program);
   }
 }
@@ -303,12 +330,14 @@ fn main() {
   //println!("{}", env!("HELP_ME").to_string());
   setup_termios();
 
+  enable_raw_mode();
+
   
 
-  enable_raw_mode();
 
 
   main_loop();
+
   disable_raw_mode();
 
   /*let mut input = String::new();

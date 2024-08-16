@@ -1,3 +1,3 @@
 {
-  HELP_ME = 1;
+  multiplayer = true;
 }

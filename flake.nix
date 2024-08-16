@@ -8,7 +8,6 @@
   flake-utils.lib.eachDefaultSystem (system:
       let 
         pkgs = nixpkgs.legacyPackages.${system};
-        config = import ./configuration.nix;
       in
       {
         formatter = pkgs.alejandra;

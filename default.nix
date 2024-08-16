@@ -1,6 +1,7 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? import <nixpkgs> { }, ... }:
 let
   mf = (pkgs.lib.importTOML ./Cargo.toml).package;
+  config = import ./configuration.nix;
 in
   pkgs.rustPlatform.buildRustPackage rec {
     pname = mf.name;
@@ -8,8 +9,10 @@ in
     src = pkgs.lib.cleanSource ./.;
 
     cargoLock.lockFile = ./Cargo.lock;
-            
-    CONFIG = "{}";  # not used, somewhere int eh futurr
+    
+
+    CHESS_MULTIPLAYER = "${toString config.multiplayer}";  # not used, somewhere int eh futurr
+
 
     cargoHash = "sha256-SkFGStZShqocYwzyU7ylaQZ2+YRmHNCUqkCAvwFt1+c=";#nixpkgs.lib.fakeHash;
     #cargoSha256 = nixpkgs.lib.fakeSha256;
