@@ -7,6 +7,33 @@ impl Controller {
   pub fn new(board: Board::Board) -> Self {
     return Controller {board, lmove: [String::from("e"), String::from("a4"), String::from("c4")].to_vec()};
   }
+  pub fn chk_color(&mut self, code: String, color: Board::common::Colors) -> bool {
+    if !code.contains(" ") {
+      return false;
+    }
+    let moves = code.split(" ").collect::<Vec<&str>>();
+    if moves.len()<2 {
+      return false;
+    }
+    let mv0 = moves[0].to_string();
+    let o_pos = mv0.chars().collect::<Vec<char>>();
+
+
+    let index = Into::<u32>::into(o_pos[0].to_string().to_lowercase().chars().next().unwrap()) -97;
+    let mut o_row: Board::Row = self.board.as_array()[o_pos[1].to_string().parse::<i32>().unwrap() as usize-1].clone();
+    let mut o_cell = o_row.as_array()[index as usize].clone();
+
+
+    match o_cell.locator {
+      Board::common::Pieces::Pawn(p) => p.color == color,
+      Board::common::Pieces::Rook(p) => p.color == color,
+      Board::common::Pieces::Knight(p) => p.color == color,
+      Board::common::Pieces::Bishop(p) => p.color == color,
+      Board::common::Pieces::Queen(p) => p.color == color,
+      Board::common::Pieces::King(p) => p.color == color,
+      _ => false
+    }
+  }
   pub fn chk_move(&mut self, code: String) -> Board::common::movestate { // lmove 0->figure 1->opos 2->npos
     if !code.contains(" ") {
       return Board::common::movestate::Illegal;

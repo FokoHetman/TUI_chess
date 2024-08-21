@@ -52,7 +52,7 @@ impl WorkerDrone {
     let thread = thread::spawn(move || loop {
       let job = receiver.lock().unwrap().recv().unwrap();
 
-      println!("\nWorker Drone {id} is handling new job...\n");
+      //println!("\nWorker Drone {id} is handling new job...\n");
       job();
     });
 

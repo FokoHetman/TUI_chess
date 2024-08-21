@@ -256,7 +256,7 @@ impl Queen {
 }
 impl King {
   pub fn new(color: Colors) -> Pieces {
-    return Pieces::King(King {value:0,color,icon:String::from("✝")});
+    return Pieces::King(King {value:0,color: color.clone(), icon: match color { Colors::White => String::from("T"), Colors::Black => String::from("t")}});
   }
   pub fn check_move(&mut self, code: Vec<&str>, entity: Pieces) -> movestate {
     match entity.clone() {

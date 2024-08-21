@@ -27,12 +27,12 @@ impl Response {
   }
 }
 
-pub fn make_request(host: &str, path: &str) -> Result<String, String> {
+pub fn make_request(host: &str, path: &str, contents: &str) -> Result<String, String> {
 
   let mut stream = TcpStream::connect(host).map_err(|e| e.to_string())?;
 
 
-  let request = format!("GET {} HTTP/1.1\r\nHost: {}\r\n\r\n", path, host);
+  let request = format!("GET {} HTTP/1.1\r\nHost: {}\r\nContent-Length:{length}\r\n\r\n{}", path, host, contents, length = contents.len());
   println!("Sending Request:\n{}", request);
   stream.write_all(request.as_bytes()).map_err(|e| e.to_string())?;
 

@@ -4,7 +4,12 @@ use std::{
   io::{self, Read, Write, IsTerminal},
   sync::{Arc,Mutex},
   thread,
+  env,
+
+  net::TcpStream,
+  str,
 };
+use Handlers::Control::Board::common;
 
 
 static termios: Mutex<libc::termios> = Mutex::new(libc::termios { c_iflag: 0, c_oflag: 0, c_cflag: 0, c_lflag: 0, c_line: 1, c_cc: [0 as u8; 32], c_ispeed: 1, c_ospeed: 1 });
@@ -117,6 +122,10 @@ struct Program {
   multiplayer: bool,
   current_player: Handlers::Control::Board::common::Colors,
   player: Handlers::Control::Board::common::Colors,
+  server: String,
+  client: String,
+  passwd: String,
+  is_hosting: bool,
 }
 
 
@@ -131,7 +140,7 @@ fn redraw(program: &mut Program) {
   let input_line = showed.split("\n").collect::<Vec<&str>>().len() as i32;
   showed += &format!("\n{}", vec!['-'; get_terminal_size().unwrap().cols as usize].iter().collect::<String>());
 
-  showed += &format!("\nYour Pieces: {}\nCurrent Move: {}", 
+  showed += &format!("\nYour Pieces: {}\nCurrent Turn: {}\n", 
       match program.player {Handlers::Control::Board::common::Colors::White => "White", _ => "Black"}, match program.current_player {Handlers::Control::Board::common::Colors::White => "White", _ => "Black"});
 
   let to_last_line = get_terminal_size().unwrap().rows as i32 - showed.split("\n").collect::<Vec<&str>>().len() as i32;
@@ -179,23 +188,62 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
       match event.code {
         KeyCode::Enter => {
           if program.current_player == program.player {
-            println!("{:#?} a {}", program.control.chk_move(program.input.clone()), program.input.clone());
+            if !program.is_hosting && program.multiplayer {
+              if program.control.chk_move(program.input.clone()) != Handlers::Control::Board::common::movestate::Illegal && program.control.chk_color(program.input.clone(), program.player.clone()) {
+              //let _ = program.control.mk_move(program.input.clone());
+              
 
-            if program.control.chk_move(program.input.clone()) != Handlers::Control::Board::common::movestate::Illegal {
-              let _ = program.control.mk_move(program.input.clone());
-              println!("move made!");
+                /*let sgame_state = Handlers::server::httpHandler::Response::new(
+                  Handlers::server::httpHandler::make_request(
+                  &program.server, &format!("/move?passwd={}", program.passwd), &program.input.clone()
+                 ).unwrap()).content;*/
+
+                let _ = program.control.mk_move(program.input.clone());
+
+                program.io = String::from("awaiting for response...");
+                //let mut stream = TcpStream::connect(&program.server).map_err(|e| e.to_string()).unwrap();
+
+                let response = Handlers::server::httpHandler::Response::new(Handlers::server::httpHandler::make_request(&program.server, &format!("/move?passwd={}", program.passwd), &program.input.clone()).unwrap());
+
+                if response.content.contains("update") {
+                  update_gamestate(program);
+                }
+                program.io = response.content;
+                //program.stream = Some(stream);
+
+                
+              }
+
+
+
             } else {
-              program.io = String::from("Invalid Move!");
+              
+              //println!("{:#?} a {}", program.control.chk_move(program.input.clone()), program.input.clone());
+
+              if program.control.chk_move(program.input.clone()) != Handlers::Control::Board::common::movestate::Illegal && program.control.chk_color(program.input.clone(), program.player.clone()) {
+                let _ = program.control.mk_move(program.input.clone());
+              //println!("move made!");
+              
+                program.current_player = match program.current_player {
+                  Handlers::Control::Board::common::Colors::White => Handlers::Control::Board::common::Colors::Black,
+                  _ => Handlers::Control::Board::common::Colors::White,
+                };
+
+
+                if program.multiplayer {
+                  let contents = String::from("update");
+                  Handlers::server::httpHandler::make_request(&program.client.clone(), "/update", "update");
+                }
+
+              } else {
+                program.io = String::from("Invalid Move!");
+              }
             }
-            program.input = String::new();
-            program.current_player = match program.current_player {
-              Handlers::Control::Board::common::Colors::White => Handlers::Control::Board::common::Colors::Black,
-              _ => Handlers::Control::Board::common::Colors::White,
-            };
+            
           } else {
             program.io = String::from("Not your turn!");
-            program.input = String::new();
           }
+          program.input = String::new();
         },
         KeyCode::Backspace => {
           let mut chars = program.input.chars();
@@ -268,9 +316,74 @@ fn getch() -> char {
 }
 
 
+fn update_gamestate(program: &mut Program) {
+
+  let response = Handlers::server::httpHandler::make_request(&program.server.clone(), &format!("/gamestate?passwd={}", program.passwd), "");
+
+
+  let sgame_state = Handlers::server::httpHandler::Response::new(response.unwrap()).content;
+  //program.stream = Some(stream);
+
+
+
+  let game_state = sgame_state.split(";").collect::<Vec<&str>>();
+
+  if game_state.len()==1 {
+    panic!("no access");
+  }
+
+  program.player = match game_state[1] {
+    "black" => common::Colors::White,
+    "white" => common::Colors::Black,
+    _ => panic!("improper host's  game state, color: {}", game_state[1]),
+  };
+  program.current_player = match game_state[2] {
+    "black" => common::Colors::Black,
+    "white" => common::Colors::White,
+    _ => panic!("improper host's  game state, current_color: {}", game_state[2]),
+  };
+  let rows = game_state[0].split(":").collect::<Vec<&str>>();
+  let mut row_id = 0;
+  let mut boarda = program.control.board.as_array();
+  for mut row in &mut boarda {
+    let mut cell_id = 0;
+    let mut rcells = rows[row_id].split("").collect::<Vec<&str>>().into_iter();
+    rcells.next();
+    rcells.next_back();
+    let cells = rcells.collect::<Vec<&str>>();
+    println!("{:#?}", cells);
+    let mut rowa = row.as_array();
+    for mut cell in &mut rowa {
+     cell.locator = match cells[cell_id] {
+        "P" => common::Pawn::new(common::Colors::White),
+        "R" => common::Rook::new(common::Colors::White),
+        "K" => common::Knight::new(common::Colors::White),
+        "B" => common::Bishop::new(common::Colors::White),
+        "Q" => common::Queen::new(common::Colors::White),
+        "T" => common::King::new(common::Colors::White),
+        "p" => common::Pawn::new(common::Colors::Black),
+        "r" => common::Rook::new(common::Colors::Black),
+        "k" => common::Knight::new(common::Colors::Black),
+        "b" => common::Bishop::new(common::Colors::Black),
+        "q" => common::Queen::new(common::Colors::Black),
+        "t" => common::King::new(common::Colors::Black),
+        " " => common::Empty::new(),
+        _ => panic!("improper host's game state (board): {:#?}", cells[cell_id]),
+        
+      };
+      cell_id+=1;
+    }
+    row.dump_array(rowa.clone());
+    row_id+=1;
+  }
+  program.control.board.dump_array(boarda.clone());
+}
+
+
+
 fn main_loop() {
   let mut board = Handlers::Control::Board::build();
-  let mut program = Program{
+  let mut fprogram = Program{
     state: States::Control,
     io: String::new(),
     input: String::new(),
@@ -279,24 +392,54 @@ fn main_loop() {
     multiplayer: env!("CHESS_MULTIPLAYER")=="1",
     current_player: Handlers::Control::Board::common::Colors::White,
     player: Handlers::Control::Board::common::Colors::White,
+    server: String::new(),
+    client: String::new(),
+    passwd: String::new(),
+    is_hosting: false,
+
   };
 
 
-  if program.multiplayer {
-    let mutex = std::sync::Mutex::new(program);
-    let arc = std::sync::Arc::new(mutex);
-    thread::spawn(|| {Handlers::server::estabilishListener(arc)});
+  let program = Arc::new(Mutex::new(fprogram));
+  let args = env::args().collect::<Vec<String>>();
+  //println!("{:#?}", args);
+  if (*program.lock().unwrap()).multiplayer {
+    let clone = Arc::clone(&program);
+    if args[1] == String::from("host") {
+      (*program.lock().unwrap()).is_hosting = true;
+      if args.len()>2 {
+        (*program.lock().unwrap()).passwd = args[2].clone();
+      }
+      
+      thread::spawn(move || {Handlers::server::estabilishListener(clone)});
+
+    } else {
+      (*program.lock().unwrap()).server = args[2].clone();
+      (*program.lock().unwrap()).passwd = args[3].clone();
+
+      update_gamestate(&mut (*program.lock().unwrap()));
+
+      thread::spawn(move || {Handlers::server::estabilishClientListener(clone)});
+
+      /*let sgame_state = Handlers::server::httpHandler::Response::new(
+          Handlers::server::httpHandler::make_request(
+            &args[2].clone(), &format!("/gamestate?passwd={}", args[3].clone()), ""
+          ).unwrap()).content;*/
+
+
+
+    }
   }
 
   //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
   //println!("{}", board.show());
   clear();
-  redraw(&mut program);
+  redraw(&mut (*program.lock().unwrap()));
 
 
   for b in io::stdin().bytes() {
     
-    println!("{:#?}", program.state);
+    //println!("{:#?}", (*program.lock().unwrap()).state);
     
     let c = b.unwrap() as char;
     //println!("{}", c);
@@ -312,12 +455,12 @@ fn main_loop() {
     };
     //println!("{:#?}", event);
 
-    parse_event(event, &mut program);
-    clear();
-    if program.exit {
+    parse_event(event, &mut (*program.lock().unwrap()));
+    //clear();
+    if (*program.lock().unwrap()).exit {
       break
     }
-    redraw(&mut program);
+    redraw(&mut (*program.lock().unwrap()));
   }
 }
 
