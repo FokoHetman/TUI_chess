@@ -14,7 +14,11 @@ pub struct Response {
 impl Response {
   pub fn new(response: String) -> Response {
 
-    let mut contents = String::from(response.split("\r\nContent-Length:").collect::<Vec<&str>>()[1].split("\r\n\r\n").collect::<Vec<&str>>()[1].to_string());
+    let mut contents = if response.contains("\r\nContent-Length") {
+        String::from(response.split("\r\nContent-Length:").collect::<Vec<&str>>()[1].split("\r\n\r\n").collect::<Vec<&str>>()[1].to_string())
+      } else {
+        String::new()
+      };
 
     let mut head = response.split("Content-Disposition:").collect::<Vec<&str>>()[0].to_string();
     let mut attachments = String::new();

@@ -16,6 +16,7 @@ fn main() {
   let mutex = Mutex::new(fprogram);
   let program = Arc::new(mutex);
   thread::spawn(move || {setup_networking(program)});
+  (mutex.lock().unwrap()).value = String::from("hi");
   loop {}
 }
 

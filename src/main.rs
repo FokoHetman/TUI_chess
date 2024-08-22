@@ -200,7 +200,7 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
 
                 let _ = program.control.mk_move(program.input.clone());
 
-                program.io = String::from("awaiting for response...");
+
                 //let mut stream = TcpStream::connect(&program.server).map_err(|e| e.to_string()).unwrap();
 
                 let response = Handlers::server::httpHandler::Response::new(Handlers::server::httpHandler::make_request(&program.server, &format!("/move?passwd={}", program.passwd), &program.input.clone()).unwrap());
@@ -208,7 +208,7 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
                 if response.content.contains("update") {
                   update_gamestate(program);
                 }
-                program.io = response.content;
+                //program.io = response.content;
                 //program.stream = Some(stream);
 
                 
@@ -231,8 +231,26 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
 
 
                 if program.multiplayer {
-                  let contents = String::from("update");
-                  Handlers::server::httpHandler::make_request(&program.client.clone(), "/update", "update");
+                 
+
+                  let mut contents = String::from("");
+                  for mut row in program.control.board.as_array() {
+                    for mut cell in row.as_array() {
+                      contents+=&cell.locator.getIcon();
+                    }
+                    contents+=":";
+                  }
+                  contents+=";";
+
+                  contents += match program.player.clone() { Handlers::Control::Board::common::Colors::White => "white", _ => "black"};
+                  contents += ";";
+                  contents += match program.current_player.clone() { Handlers::Control::Board::common::Colors::White => "white", _ => "black"};
+                  //println!("colors done");
+                  //program.client = format!("{}:5050", format!("{}", stream.peer_addr().unwrap()).split(":").collect::<Vec<&str>>()[0]);
+
+                  contents +=";";
+
+                  Handlers::server::httpHandler::make_request(&program.client.clone(), "/update", &contents);
                 }
 
               } else {
@@ -329,18 +347,18 @@ fn update_gamestate(program: &mut Program) {
   let game_state = sgame_state.split(";").collect::<Vec<&str>>();
 
   if game_state.len()==1 {
-    panic!("no access");
+    panic!("no access, gamestate: {:#?}", game_state);
   }
 
   program.player = match game_state[1] {
     "black" => common::Colors::White,
     "white" => common::Colors::Black,
-    _ => panic!("improper host's  game state, color: {}", game_state[1]),
+    _ => panic!("improper host's  game state, color: {}\nfull_gamestate: {:#?}", game_state[1], game_state),
   };
   program.current_player = match game_state[2] {
     "black" => common::Colors::Black,
     "white" => common::Colors::White,
-    _ => panic!("improper host's  game state, current_color: {}", game_state[2]),
+    _ => panic!("improper host's  game state, current_color: {}\nfull_gamestate: {:#?}", game_state[2], game_state),
   };
   let rows = game_state[0].split(":").collect::<Vec<&str>>();
   let mut row_id = 0;
@@ -351,7 +369,7 @@ fn update_gamestate(program: &mut Program) {
     rcells.next();
     rcells.next_back();
     let cells = rcells.collect::<Vec<&str>>();
-    println!("{:#?}", cells);
+    //println!("{:#?}", cells);
     let mut rowa = row.as_array();
     for mut cell in &mut rowa {
      cell.locator = match cells[cell_id] {
@@ -401,23 +419,25 @@ fn main_loop() {
 
 
   let program = Arc::new(Mutex::new(fprogram));
+
   let args = env::args().collect::<Vec<String>>();
   //println!("{:#?}", args);
-  if (*program.lock().unwrap()).multiplayer {
+  let mut program_lock = program.lock();
+  if (*program_lock.as_mut().unwrap()).multiplayer {
     let clone = Arc::clone(&program);
     if args[1] == String::from("host") {
-      (*program.lock().unwrap()).is_hosting = true;
+      (*program_lock.as_mut().unwrap()).is_hosting = true;
       if args.len()>2 {
-        (*program.lock().unwrap()).passwd = args[2].clone();
+        (*program_lock.as_mut().unwrap()).passwd = args[2].clone();
       }
       
       thread::spawn(move || {Handlers::server::estabilishListener(clone)});
 
     } else {
-      (*program.lock().unwrap()).server = args[2].clone();
-      (*program.lock().unwrap()).passwd = args[3].clone();
+      (*program_lock.as_mut().unwrap()).server = args[2].clone();
+      (*program_lock.as_mut().unwrap()).passwd = args[3].clone();
 
-      update_gamestate(&mut (*program.lock().unwrap()));
+      update_gamestate(&mut (*program_lock.as_mut().unwrap()));
 
       thread::spawn(move || {Handlers::server::estabilishClientListener(clone)});
 
@@ -425,17 +445,16 @@ fn main_loop() {
           Handlers::server::httpHandler::make_request(
             &args[2].clone(), &format!("/gamestate?passwd={}", args[3].clone()), ""
           ).unwrap()).content;*/
-
-
-
     }
   }
+  
 
   //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
   //println!("{}", board.show());
   clear();
-  redraw(&mut (*program.lock().unwrap()));
+  redraw(&mut (*program_lock.as_mut().unwrap()));
 
+  drop(program_lock);
 
   for b in io::stdin().bytes() {
     
@@ -454,13 +473,15 @@ fn main_loop() {
       modifiers,
     };
     //println!("{:#?}", event);
+    let mut program_lock = program.lock();
 
-    parse_event(event, &mut (*program.lock().unwrap()));
-    //clear();
-    if (*program.lock().unwrap()).exit {
+    parse_event(event, &mut (*program_lock.as_mut().unwrap()));
+    clear();
+    if (*program_lock.as_mut().unwrap()).exit {
       break
     }
-    redraw(&mut (*program.lock().unwrap()));
+    redraw(&mut (*program_lock.as_mut().unwrap()));
+    drop(program_lock);
   }
 }
 
