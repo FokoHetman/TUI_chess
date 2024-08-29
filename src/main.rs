@@ -191,27 +191,41 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
             if !program.is_hosting && program.multiplayer {
               if program.control.chk_move(program.input.clone()) != Handlers::Control::Board::common::movestate::Illegal && program.control.chk_color(program.input.clone(), program.player.clone()) {
               //let _ = program.control.mk_move(program.input.clone());
+                
+                program.control.temp_move(program.input.clone());
+                let king_pos = program.control.get_king(program.current_player.clone()).chars().collect();
+                if !program.control.check_checks(king_pos, program.current_player.clone()) {
+                
               
 
-                /*let sgame_state = Handlers::server::httpHandler::Response::new(
-                  Handlers::server::httpHandler::make_request(
-                  &program.server, &format!("/move?passwd={}", program.passwd), &program.input.clone()
-                 ).unwrap()).content;*/
+                  /*let sgame_state = Handlers::server::httpHandler::Response::new(
+                    Handlers::server::httpHandler::make_request(
+                    &program.server, &format!("/move?passwd={}", program.passwd), &program.input.clone()
+                   ).unwrap()).content;*/
 
-                let _ = program.control.mk_move(program.input.clone());
+                  let _ = program.control.mk_move(program.input.clone());
 
 
-                //let mut stream = TcpStream::connect(&program.server).map_err(|e| e.to_string()).unwrap();
+                  //let mut stream = TcpStream::connect(&program.server).map_err(|e| e.to_string()).unwrap();
 
-                let response = Handlers::server::httpHandler::Response::new(Handlers::server::httpHandler::make_request(&program.server, &format!("/move?passwd={}", program.passwd), &program.input.clone()).unwrap());
+                  let response = Handlers::server::httpHandler::Response::new(Handlers::server::httpHandler::make_request(&program.server, &format!("/move?passwd={}", program.passwd), &program.input.clone()).unwrap());
 
-                if response.content.contains("update") {
-                  update_gamestate(program);
+                  if response.content.contains("update") {
+                    update_gamestate(program);
+                  }
+                  //program.io = response.content;
+                  //program.stream = Some(stream);
+                } else {
+                  let rev_code = program.input.clone().clone().split(" ").collect::<Vec<&str>>()[1].to_string() + " " + program.input.clone().split(" ").collect::<Vec<&str>>()[0];
+                  program.control.temp_move(rev_code);
+                  program.io = String::from("You're in check!");
                 }
-                //program.io = response.content;
-                //program.stream = Some(stream);
+                
 
                 
+                
+              } else {
+                program.io = String::from("Illegal move!");
               }
 
 
@@ -221,6 +235,14 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
               //println!("{:#?} a {}", program.control.chk_move(program.input.clone()), program.input.clone());
 
               if program.control.chk_move(program.input.clone()) != Handlers::Control::Board::common::movestate::Illegal && program.control.chk_color(program.input.clone(), program.player.clone()) {
+
+
+                program.control.temp_move(program.input.clone());
+                let king_pos: Vec<char> = program.control.get_king(program.current_player.clone()).chars().collect();
+                program.io = king_pos.clone().into_iter().collect::<String>();
+                if !program.control.check_checks(king_pos, program.current_player.clone()) {
+
+
                 let _ = program.control.mk_move(program.input.clone());
               //println!("move made!");
               
@@ -253,8 +275,17 @@ fn parse_event(event: KeyEvent, program: &mut Program) {
                   Handlers::server::httpHandler::make_request(&program.client.clone(), "/update", &contents);
                 }
 
+                } else {
+                  let rev_code = program.input.clone().clone().split(" ").collect::<Vec<&str>>()[1].to_string() + " " + program.input.clone().split(" ").collect::<Vec<&str>>()[0];
+                  program.control.temp_move(rev_code);
+                  program.io = String::from("You're in check!");
+                }
+                
+
+                
+
               } else {
-                program.io = String::from("Invalid Move!");
+                program.io = String::from("Illegal Move!");
               }
             }
             

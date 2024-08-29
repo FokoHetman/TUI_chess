@@ -267,7 +267,7 @@ impl Controller {
           //println!("{}:{}", index, num);
         }
       } else {
-        for i in 1..(n_index - s_index) {
+        for i in 1..(s_index - n_index) {
           index+=1;
           num+=1;
           let mut cur_row = self.board.as_array()[num as usize -1].clone();
@@ -338,7 +338,7 @@ impl Controller {
 
 
 
-  fn temp_move(&mut self, code: String) {
+  pub fn temp_move(&mut self, code: String) {
     let moves = code.split(" ").collect::<Vec<&str>>();
     let mv0 = moves[0].to_string();
       
@@ -392,10 +392,29 @@ impl Controller {
     self.lmove = [id, moves[0].to_string(), moves[1].to_string()].to_vec();
   }
 
+  pub fn get_king(&mut self, color: Board::common::Colors) -> String {
+    let mut result = String::from("");
+    let mut row_id = 0;
+    for mut row in self.board.as_array() {
+      row_id+=1;
+      let mut cell_id = 0;
+      for mut cell in row.as_array() {
+        cell_id+=1;
+        match cell.locator {
+          Board::common::Pieces::King(k) => {
+            if k.color == color {
+              result = format!("{}{}", std::char::from_u32(cell_id+96).unwrap(), row_id);
+            }
+          },
+          _ => {}
+        }
+      }
+    }
+    result
+  }
 
 
-
-  fn check_checks(&mut self, position: Vec<char>, team_color: Board::common::Colors) -> bool {
+  pub fn check_checks(&mut self, position: Vec<char>, team_color: Board::common::Colors) -> bool {
     
     let mut row_index = 1;
     let target: String = position.into_iter().collect();
