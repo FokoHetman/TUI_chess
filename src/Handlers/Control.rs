@@ -240,7 +240,7 @@ impl Controller {
           //println!("{}:{}", index, num);
         }
       } else {
-        for i in 1..(n_index - s_index) {
+        for i in 1..(s_index - n_index) {
           index+=1;
           num+=1;
           let mut cur_row = self.board.as_array()[num as usize -1].clone();
