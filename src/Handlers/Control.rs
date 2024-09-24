@@ -268,8 +268,8 @@ impl Controller {
         }
       } else {
         for i in 1..(s_index - n_index) {
-          index+=1;
-          num+=1;
+          index-=1;
+          num-=1;
           let mut cur_row = self.board.as_array()[num as usize -1].clone();
           if match cur_row.as_array()[index as usize].locator {
             Board::common::Pieces::Empty(_) => false,

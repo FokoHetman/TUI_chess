@@ -80,7 +80,7 @@ fn handle_con(mut stream: TcpStream, program: Arc<Mutex<Program>>) -> io::Result
 
 
 
-  println!("pre-matching dir: {}", dir);
+  println!("networking is trying...");
 
   let mut program_lock = program.try_lock();
   if let Ok(ref mut mutex) = program_lock {
