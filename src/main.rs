@@ -5,7 +5,6 @@ use std::{
   sync::{Arc,Mutex},
   thread,
   env,
-
   net::TcpStream,
   str,
 };
