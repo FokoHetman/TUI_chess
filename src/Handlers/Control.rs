@@ -42,6 +42,11 @@ impl Controller {
     if moves.len()<2 {
       return Board::common::movestate::Illegal;
     }
+    if moves[0].len() != 2 || moves[1].len() != 2 || 
+          !('a'..='h').collect::<Vec<char>>().contains(&moves[0].chars().nth(0).unwrap()) || !(1..=8).map(|x| x.to_string().chars().nth(0).unwrap()).into_iter().collect::<Vec<char>>().contains(&moves[0].chars().nth(1).unwrap()) ||
+          !('a'..='h').collect::<Vec<char>>().contains(&moves[1].chars().nth(0).unwrap()) || !(1..=8).map(|x| x.to_string().chars().nth(0).unwrap()).into_iter().collect::<Vec<char>>().contains(&moves[1].chars().nth(1).unwrap()){
+      return Board::common::movestate::Illegal;
+    }
     let mv0 = moves[0].to_string();
     let o_pos = mv0.chars().collect::<Vec<char>>();
 
@@ -92,8 +97,9 @@ impl Controller {
 
       Board::common::movestate::Legal => {
         let moves = code.split(" ").collect::<Vec<&str>>();
+
         let mv0 = moves[0].to_string();
-      
+ 
         let o_pos = mv0.chars().collect::<Vec<char>>();
         let index = Into::<u32>::into(o_pos[0].to_string().to_lowercase().chars().next().unwrap()) -97;
         let mut o_row: Board::Row = self.board.as_array()[o_pos[1].to_string().parse::<i32>().unwrap() as usize-1].clone();
