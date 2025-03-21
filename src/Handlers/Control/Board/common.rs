@@ -192,7 +192,7 @@ impl Bishop {
 
 impl Knight {
   pub fn new(color: Colors) -> Pieces {
-    return Pieces::Knight(Knight {value: 3,color: color.clone(), icon: match color{ Colors::White => String::from("K"), Colors::Black => String::from("k")}});
+    return Pieces::Knight(Knight {value: 3,color: color.clone(), icon: match color{ Colors::White => String::from("N"), Colors::Black => String::from("n")}});
   }
   pub fn check_move(&mut self, code: Vec<&str>, entity: Pieces) -> movestate {
     let o_pos = code[0].to_string().chars().collect::<Vec<char>>();
@@ -256,7 +256,7 @@ impl Queen {
 }
 impl King {
   pub fn new(color: Colors) -> Pieces {
-    return Pieces::King(King {value:0,color: color.clone(), icon: match color { Colors::White => String::from("T"), Colors::Black => String::from("t")}});
+    return Pieces::King(King {value:0,color: color.clone(), icon: match color { Colors::White => String::from("K"), Colors::Black => String::from("k")}});
   }
   pub fn check_move(&mut self, code: Vec<&str>, entity: Pieces) -> movestate {
     match entity.clone() {
